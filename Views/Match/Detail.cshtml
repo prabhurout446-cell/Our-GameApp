@@ -1,0 +1,272 @@
+@model Our11.Models.MatchDetailViewModel
+@{
+    ViewData["Title"] = $"{Model.Match.Team1} vs {Model.Match.Team2}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isStarted = Model.Match.StartTime <= DateTime.UtcNow;
+}
+
+<div style="background:var(--dark-2);border-bottom:1px solid var(--border);padding:16px 0;">
+    <div class="container">
+        <a asp-controller="Match" asp-action="Index" style="color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-arrow-left"></i> Back to Matches</a>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;">@Model.Match.MatchType • @Model.Match.Sport • @Model.Match.Venue</div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <span style="font-family:var(--font-display);font-size:1.8rem;font-weight:700;">@Model.Match.Team1</span>
+                    <span style="color:var(--text-muted);font-size:1rem;">VS</span>
+                    <span style="font-family:var(--font-display);font-size:1.8rem;font-weight:700;">@Model.Match.Team2</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Match.Score))
+                {
+                    <div style="color:var(--primary);font-size:0.85rem;margin-top:4px;" data-live-match-id="@Model.Match.Id">
+                        <i class="fas fa-circle" style="color:var(--danger);font-size:0.5rem;"></i> @Model.Match.Score
+                    </div>
+                }
+            </div>
+            <div style="text-align:right;">
+                @if (Model.Match.Status == "Live")
+                {
+                    <span class="status-badge status-live" style="font-size:0.85rem;">● LIVE</span>
+                }
+                else if (Model.Match.Status == "Upcoming")
+                {
+                    <div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Starts in</div>
+                        <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--primary);" data-countdown="@Model.Match.StartTime.ToString("O")"></div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">@Model.Match.StartTime.ToString("MMM d, h:mm tt") IST</div>
+                    </div>
+                }
+                else
+                {
+                    <span class="status-badge status-completed">Completed</span>
+                }
+                @if (!isStarted && User.Identity?.IsAuthenticated == true)
+                {
+                    <div style="margin-top:10px;">
+                        <a asp-controller="Team" asp-action="Create" asp-route-matchId="@Model.Match.Id" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Team
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="padding-top:20px;">
+    <!-- Tabs -->
+    <div data-tabs-container>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="contests">
+                <i class="fas fa-trophy"></i> Contests (@Model.Contests.Count)
+            </button>
+            <button class="tab-btn" data-tab="players">
+                <i class="fas fa-users"></i> Players (@Model.Players.Count)
+            </button>
+            @if (Model.UserTeams.Any())
+            {
+                <button class="tab-btn" data-tab="myteams">
+                    <i class="fas fa-shield-alt"></i> My Teams (@Model.UserTeams.Count)
+                </button>
+            }
+        </div>
+
+        <!-- Contests Tab -->
+        <div class="tab-content active" data-tab-content="contests">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                <span class="text-muted small">@Model.Contests.Count contest(s) available</span>
+                @if (!isStarted && User.Identity?.IsAuthenticated == true)
+                {
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a asp-controller="Contest" asp-action="InviteCode" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-ticket-alt"></i> Join by Code
+                        </a>
+                        <a asp-controller="Contest" asp-action="Create" asp-route-matchId="@Model.Match.Id" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Create Contest
+                        </a>
+                    </div>
+                }
+            </div>
+
+            @if (Model.Contests.Any())
+            {
+                <div class="contest-grid">
+                    @foreach (var c in Model.Contests)
+                    {
+                        var fillPct    = c.MaxTeams > 0 ? (double)c.FilledTeams / c.MaxTeams * 100 : 0;
+                        var spotsLeft  = c.MaxTeams - c.FilledTeams;
+                        var netPrize   = c.EntryFee * c.FilledTeams * (1 - c.CommissionPct / 100m);
+                        var spotsColor = spotsLeft < 10 ? "color:var(--danger)" : "color:var(--text-muted)";
+                        <div class="contest-card">
+                            @if (c.ContestType == "Private")
+                            {
+                                <span class="contest-badge badge-private"><i class="fas fa-lock"></i> Private</span>
+                            }
+                            else if (c.Status == "Full")
+                            {
+                                <span class="contest-badge badge-full">Full</span>
+                            }
+                            else
+                            {
+                                <span class="contest-badge badge-guaranteed">Open</span>
+                            }
+                            <div style="margin-top:8px;">
+                                <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">@c.Name</div>
+                                <div class="contest-prize">₹@c.TotalPrize.ToString("N0")</div>
+                                <div class="contest-entry">Prize Pool • ₹@c.EntryFee Entry</div>
+                            </div>
+                            <div class="contest-bar" style="margin:12px 0;">
+                                <div class="contest-bar-fill" style="width:@fillPct.ToString("F0")%"></div>
+                            </div>
+                            <div class="contest-spots">
+                                <span>@c.FilledTeams / @c.MaxTeams Teams</span>
+                                <span style="@spotsColor">@spotsLeft spots left</span>
+                            </div>
+                            @if (c.Prizes.Any())
+                            {
+                                <div style="font-size:0.72rem;color:var(--primary);margin-top:8px;">
+                                    🥇 1st: ₹@c.Prizes.FirstOrDefault(p => p.RankFrom == 1)?.Amount.ToString("N0")
+                                </div>
+                            }
+                            <div style="margin-top:12px;display:flex;gap:8px;">
+                                @if (!isStarted && User.Identity?.IsAuthenticated == true && c.Status == "Open")
+                                {
+                                    <a asp-controller="Contest" asp-action="Detail" asp-route-id="@c.Id" class="btn btn-primary btn-sm" style="flex:1;">
+                                        <i class="fas fa-bolt"></i> Join Now
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Contest" asp-action="Detail" asp-route-id="@c.Id" class="btn btn-secondary btn-sm" style="flex:1;">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                }
+                                @if (!isStarted && c.ContestType == "Private" && !string.IsNullOrEmpty(c.InviteCode))
+                                {
+                                    <button class="btn btn-outline-primary btn-sm" onclick="copyToClipboard('@c.InviteCode')">
+                                        <i class="fas fa-copy"></i> @c.InviteCode
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-trophy"></i>
+                    <h4>No Contests Yet</h4>
+                    <p>Be the first to create a contest for this match!</p>
+                    @if (!isStarted)
+                    {
+                        <a asp-controller="Contest" asp-action="Create" asp-route-matchId="@Model.Match.Id" class="btn btn-primary mt-3">
+                            Create Contest
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Players Tab -->
+        <div class="tab-content" data-tab-content="players">
+            @if (Model.Players.Any())
+            {
+                var teams = Model.Players.Select(p => p.Team).Distinct().ToList();
+                <div class="filter-bar" style="margin-bottom:16px;">
+                    <button class="filter-chip active" onclick="filterPlayers('all', this)">All</button>
+                    <button class="filter-chip" onclick="filterPlayers('WK', this)">WK</button>
+                    <button class="filter-chip" onclick="filterPlayers('BAT', this)">BAT</button>
+                    <button class="filter-chip" onclick="filterPlayers('ALL', this)">ALL</button>
+                    <button class="filter-chip" onclick="filterPlayers('BOWL', this)">BOWL</button>
+                    @foreach (var t in teams)
+                    {
+                        <button class="filter-chip" onclick="filterPlayers('@t', this)">@t</button>
+                    }
+                </div>
+                <div class="player-grid" id="playerGrid">
+                    @foreach (var p in Model.Players.OrderByDescending(p => p.Credits))
+                    {
+                        <div class="player-card" data-role="@p.Role" data-team="@p.Team">
+                            <div class="player-avatar">
+                                @(p.Role == "WK" ? "🧤" : p.Role == "BAT" ? "🏏" : p.Role == "BOWL" ? "⚾" : "⚡")
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name">@p.Name</div>
+                                <div class="player-team">@p.Team</div>
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+                                    <span class="role-badge role-@p.Role">@p.Role</span>
+                                    <span class="selection-pct">@p.SelectionPercentage% selected</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="player-credit">@p.Credits cr</div>
+                                @if (p.Points > 0)
+                                {
+                                    <div style="font-size:0.75rem;color:var(--success);">@p.Points pts</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-users-slash"></i>
+                    <h4>Players Not Yet Available</h4>
+                    <p>Player data will be fetched shortly</p>
+                </div>
+            }
+        </div>
+
+        <!-- My Teams Tab -->
+        @if (Model.UserTeams.Any())
+        {
+            <div class="tab-content" data-tab-content="myteams">
+                <div style="display:grid;gap:16px;">
+                    @foreach (var team in Model.UserTeams)
+                    {
+                        <div class="card">
+                            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:700;">@team.TeamName</span>
+                                <span style="font-size:0.78rem;color:var(--text-muted);">@team.TeamPlayers.Count players • @team.TotalPoints pts</span>
+                            </div>
+                            <div class="card-body">
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+                                    @foreach (var tp in team.TeamPlayers.OrderBy(tp => tp.Player.Role))
+                                    {
+                                        <div style="display:flex;align-items:center;gap:4px;background:var(--dark-3);padding:5px 10px;border-radius:20px;font-size:0.78rem;@(tp.PlayerId.ToString() == team.CaptainId ? "border:1px solid var(--gold);color:var(--gold);" : tp.PlayerId.ToString() == team.ViceCaptainId ? "border:1px solid var(--silver);color:var(--silver);" : "")">
+                                            <span class="role-badge role-@tp.Player.Role">@tp.Player.Role</span>
+                                            @tp.Player.Name
+                                            @if (tp.PlayerId.ToString() == team.CaptainId) { <span style="font-weight:700;">(C)</span> }
+                                            @if (tp.PlayerId.ToString() == team.ViceCaptainId) { <span style="font-weight:700;">(VC)</span> }
+                                        </div>
+                                    }
+                                </div>
+                                @if (!isStarted)
+                                {
+                                    <a asp-controller="Contest" asp-action="Create" asp-route-matchId="@Model.Match.Id" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-trophy"></i> Use in Contest
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function filterPlayers(val, btn) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#playerGrid .player-card').forEach(card => {
+        card.style.display = (val === 'all' || card.dataset.role === val || card.dataset.team === val) ? '' : 'none';
+    });
+}
+</script>
+}

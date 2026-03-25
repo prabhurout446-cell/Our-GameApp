@@ -1,0 +1,202 @@
+@model Our11.Models.ContestDetailViewModel
+@{
+    ViewData["Title"] = Model.Contest.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isStarted = Model.Contest.Match.StartTime <= DateTime.UtcNow;
+    var fillPct = Model.Contest.MaxTeams > 0 ? (double)Model.Contest.FilledTeams / Model.Contest.MaxTeams * 100 : 0;
+    var gross = Model.Contest.EntryFee * Model.Contest.FilledTeams;
+    var commission = gross * Model.Contest.CommissionPct / 100m;
+}
+
+<div class="container" style="padding-top:20px;padding-bottom:40px;">
+    <a asp-controller="Match" asp-action="Detail" asp-route-id="@Model.Contest.MatchId" style="color:var(--text-muted);font-size:0.82rem;">
+        <i class="fas fa-arrow-left"></i> @Model.Contest.Match.Team1 vs @Model.Contest.Match.Team2
+    </a>
+
+    <!-- Contest Header Card -->
+    <div class="card mt-3 mb-4" style="border:1px solid rgba(212,245,42,0.2);">
+        <div class="card-body">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;">@Model.Contest.Name</div>
+                    <div style="font-size:0.8rem;color:var(--text-muted);">
+                        @Model.Contest.Match.Team1 vs @Model.Contest.Match.Team2 •
+                        @Model.Contest.Match.MatchType •
+                        @Model.Contest.Match.StartTime.ToString("MMM d, h:mm tt")
+                    </div>
+                </div>
+                <div>
+                    @if (Model.Contest.ContestType == "Private" && !string.IsNullOrEmpty(Model.Contest.InviteCode))
+                    {
+                        <div style="background:var(--dark-3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;">
+                            <div style="font-size:0.72rem;color:var(--text-muted);">Invite Code</div>
+                            <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;letter-spacing:2px;color:var(--primary);">
+                                @Model.Contest.InviteCode
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="copyToClipboard('@Model.Contest.InviteCode')">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Prize Pool Stats -->
+            <div class="stat-grid mt-3">
+                <div class="stat-card">
+                    <div class="stat-value">₹@Model.NetPrizePool.ToString("N0")</div>
+                    <div class="stat-label">Net Prize Pool</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">₹@Model.Contest.EntryFee.ToString("N0")</div>
+                    <div class="stat-label">Entry Fee</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">@Model.Contest.FilledTeams / @Model.Contest.MaxTeams</div>
+                    <div class="stat-label">Teams Joined</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">@Model.Contest.CommissionPct%</div>
+                    <div class="stat-label">Platform Fee</div>
+                </div>
+            </div>
+
+            <!-- Prize breakdown note -->
+            <div style="background:var(--dark-3);border-radius:8px;padding:12px 16px;margin-top:16px;font-size:0.82rem;color:var(--text-muted);">
+                <i class="fas fa-info-circle text-primary"></i>
+                <strong>Prize Calculation:</strong> Gross Pool = ₹@Model.Contest.EntryFee × @Model.Contest.FilledTeams teams = ₹@gross.ToString("N2") 
+                → Platform fee (@Model.Contest.CommissionPct%) = ₹@commission.ToString("N2") 
+                → <strong style="color:var(--primary);">Net Prize = ₹@Model.NetPrizePool.ToString("N2")</strong>
+            </div>
+
+            <!-- Fill bar -->
+            <div style="margin-top:16px;">
+                <div class="contest-bar">
+                    <div class="contest-bar-fill" style="width:@fillPct.ToString("F0")%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);">
+                    <span>@Model.Contest.FilledTeams teams joined</span>
+                    <span>@(Model.Contest.MaxTeams - Model.Contest.FilledTeams) spots left</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Contest -->
+        @if (!isStarted && User.Identity?.IsAuthenticated == true && Model.Contest.Status == "Open")
+        {
+            <div class="card-footer">
+                @if (Model.UserTeams.Any())
+                {
+                    <form method="post" asp-controller="Contest" asp-action="Join" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="contestId" value="@Model.Contest.Id" />
+                        <select name="teamId" class="form-control" style="max-width:200px;">
+                            @foreach (var t in Model.UserTeams)
+                            {
+                                <option value="@t.Id">@t.TeamName</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-bolt"></i> Join with this Team (₹@Model.Contest.EntryFee)
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span class="text-muted small"><i class="fas fa-exclamation-circle"></i> Create a team first to join this contest</span>
+                        <a asp-controller="Team" asp-action="Create" asp-route-matchId="@Model.Contest.MatchId" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Create Team
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <!-- Prize Breakdown -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header"><i class="fas fa-medal text-primary"></i> Prize Breakdown</div>
+                <div class="card-body" style="padding:0;">
+                    @if (Model.Contest.Prizes.Any())
+                    {
+                        <table class="prize-table">
+                            <thead>
+                                <tr><th>Rank</th><th>Prize</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var prize in Model.Contest.Prizes.OrderBy(p => p.RankFrom))
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (prize.RankFrom == 1) { <span style="color:var(--gold);">🥇 1st</span> }
+                                            else if (prize.RankFrom == 2) { <span style="color:var(--silver);">🥈 2nd</span> }
+                                            else if (prize.RankFrom == 3) { <span style="color:var(--bronze);">🥉 3rd</span> }
+                                            else if (prize.RankFrom == prize.RankTo) { <text>#@prize.RankFrom</text> }
+                                            else { <text>#@prize.RankFrom – #@prize.RankTo</text> }
+                                        </td>
+                                        <td style="color:var(--primary);font-weight:700;">₹@prize.Amount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.85rem;">
+                            Prize distribution will be calculated when the contest fills or the match ends.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;">
+                    <span><i class="fas fa-list-ol text-primary"></i> Leaderboard</span>
+                    <span class="small text-muted">@Model.Participants.Count participants</span>
+                </div>
+                @if (Model.Participants.Any())
+                {
+                    <div>
+                        @foreach (var uc in Model.Participants)
+                        {
+                            var rankClass = uc.Rank == 1 ? "rank-1" : uc.Rank == 2 ? "rank-2" : uc.Rank == 3 ? "rank-3" : "rank-other";
+                            <div class="leaderboard-row">
+                                <div class="rank-badge @rankClass">
+                                    @(uc.Rank.HasValue ? "#" + uc.Rank : "-")
+                                </div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:600;font-size:0.9rem;">@uc.User.FullName</div>
+                                    <div class="small text-muted">@uc.UserTeam.TeamName</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    @if (uc.UserTeam.TotalPoints > 0)
+                                    {
+                                        <div style="font-weight:700;color:var(--primary);">@uc.UserTeam.TotalPoints pts</div>
+                                    }
+                                    @if (uc.WinningsAmount.HasValue && uc.WinningsAmount > 0)
+                                    {
+                                        <div class="small text-success">+₹@uc.WinningsAmount.Value.ToString("N2")</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" style="padding:40px;">
+                        <i class="fas fa-users"></i>
+                        <h4>No Participants Yet</h4>
+                        <p>Be the first to join!</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

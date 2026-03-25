@@ -1,0 +1,112 @@
+@model Our11.Models.Match
+@{
+    ViewData["Title"] = "Manage Players";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-layout">
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">ADMIN PANEL</div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link active"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+    <div class="admin-content">
+        <a asp-action="Matches" style="color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-arrow-left"></i> Back to Matches</a>
+        <div class="page-title mt-3 mb-4">
+            <i class="fas fa-users text-primary"></i> Players — @Model.Team1 vs @Model.Team2
+        </div>
+
+        <!-- Add Player Form -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-plus text-primary"></i> Add Player</div>
+            <div class="card-body">
+                <form asp-action="AddPlayer" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MatchId" value="@Model.Id" />
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Name *</label>
+                            <input name="Name" class="form-control" placeholder="Player Name" required />
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Team *</label>
+                            <select name="Team" class="form-control" required>
+                                <option value="@Model.Team1">@Model.Team1</option>
+                                <option value="@Model.Team2">@Model.Team2</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Role *</label>
+                            <select name="Role" class="form-control" required>
+                                <option value="WK">WK - Wicket Keeper</option>
+                                <option value="BAT">BAT - Batsman</option>
+                                <option value="ALL">ALL - All Rounder</option>
+                                <option value="BOWL">BOWL - Bowler</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Credits</label>
+                            <input name="Credits" type="number" class="form-control" min="5" max="12" step="0.5" value="8" required />
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Selection %</label>
+                            <input name="SelectionPercentage" type="number" class="form-control" min="0" max="100" value="50" />
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-plus"></i> Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Players List -->
+        <div class="card">
+            <div class="card-header"><i class="fas fa-list"></i> Current Players (@Model.Players.Count)</div>
+            @if (Model.Players.Any())
+            {
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Name</th><th>Team</th><th>Role</th><th>Credits</th><th>Sel%</th><th>Points</th><th>Update Points</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Players.OrderBy(p => p.Team).ThenBy(p => p.Role))
+                            {
+                                <tr>
+                                    <td><strong>@p.Name</strong></td>
+                                    <td>@p.Team</td>
+                                    <td><span class="role-badge role-@p.Role">@p.Role</span></td>
+                                    <td>@p.Credits</td>
+                                    <td>@p.SelectionPercentage%</td>
+                                    <td style="color:var(--primary);font-weight:700;">@p.Points</td>
+                                    <td>
+                                        <form asp-action="UpdatePlayerPoints" method="post" style="display:flex;gap:6px;align-items:center;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="playerId" value="@p.Id" />
+                                            <input type="number" name="points" class="form-control" value="@p.Points" style="width:80px;padding:5px 8px;" />
+                                            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state" style="padding:40px;">
+                    <i class="fas fa-users-slash"></i>
+                    <h4>No Players Added</h4>
+                    <p>Add players using the form above</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

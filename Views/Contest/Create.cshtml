@@ -1,0 +1,134 @@
+@model Our11.Models.CreateContestViewModel
+@{
+    ViewData["Title"] = "Create Contest";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var match = ViewBag.Match as Our11.Models.Match;
+    var commPct = (decimal)(ViewBag.CommissionPct ?? 25m);
+}
+
+<div class="container" style="padding-top:24px;padding-bottom:40px;max-width:700px;">
+    <a asp-controller="Match" asp-action="Detail" asp-route-id="@Model.MatchId" style="color:var(--text-muted);font-size:0.82rem;">
+        <i class="fas fa-arrow-left"></i> Back to Match
+    </a>
+
+    <div class="page-header">
+        <div class="page-title">🏆 Create Contest</div>
+    </div>
+
+    @if (match != null)
+    {
+        <div style="background:var(--dark-3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+            <div style="font-size:2rem;">🏏</div>
+            <div>
+                <div style="font-weight:700;">@match.Team1 vs @match.Team2</div>
+                <div class="small text-muted">@match.MatchType • @match.StartTime.ToString("MMM d, h:mm tt")</div>
+            </div>
+        </div>
+    }
+
+    <form method="post" asp-controller="Contest" asp-action="Create">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="MatchId" value="@Model.MatchId" />
+
+        <div class="card mb-3">
+            <div class="card-header"><i class="fas fa-edit"></i> Contest Details</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Contest Name *</label>
+                    <input name="Name" class="form-control" placeholder="e.g., Grand League, Head to Head..." required maxlength="100" />
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label">Max Teams *</label>
+                            <input type="number" name="MaxTeams" id="maxTeams" class="form-control" min="2" max="10000" value="10" required />
+                            <div class="small text-muted mt-2">Min: 2, Max: 10,000</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label">Entry Fee (₹) *</label>
+                            <input type="number" name="EntryFee" id="entryFee" class="form-control" min="0" step="0.01" value="10" required />
+                            <div class="small text-muted mt-2">0 for free contest</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contest Type</label>
+                    <select name="ContestType" class="form-control">
+                        <option value="Public">🌍 Public — Anyone can join</option>
+                        <option value="Private">🔒 Private — Share invite code</option>
+                    </select>
+                </div>
+                <input type="hidden" id="commissionPct" value="@commPct" />
+            </div>
+        </div>
+
+        <!-- Prize Pool Preview -->
+        <div class="card mb-3" style="border:1px solid rgba(212,245,42,0.2);">
+            <div class="card-header"><i class="fas fa-calculator text-primary"></i> Prize Pool Preview</div>
+            <div class="card-body">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="grossPrize">₹0</div>
+                        <div class="stat-label">Gross Pool</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="commissionAmt" style="color:var(--danger);">₹0</div>
+                        <div class="stat-label">Platform Fee (@commPct%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="netPrize" style="color:var(--success);">₹0</div>
+                        <div class="stat-label">Net Prize Pool</div>
+                    </div>
+                </div>
+                <div style="background:var(--dark-3);border-radius:8px;padding:12px;margin-top:12px;font-size:0.8rem;color:var(--text-muted);">
+                    <i class="fas fa-info-circle"></i> Platform commission of <strong>@commPct%</strong> is deducted from the gross prize pool. The remaining amount is distributed as winnings.
+                </div>
+            </div>
+        </div>
+
+        <!-- Prize Breakdown (Optional) -->
+        <div class="card mb-4">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span><i class="fas fa-medal"></i> Prize Breakdown (Optional)</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPrizeRow()">
+                    <i class="fas fa-plus"></i> Add Rank
+                </button>
+            </div>
+            <div class="card-body" id="prizeBreakdowns">
+                <div class="small text-muted mb-3">Leave empty for auto-distribution. Top 40% winners share the prize pool.</div>
+                <!-- Dynamic rows added by JS -->
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <a asp-controller="Match" asp-action="Detail" asp-route-id="@Model.MatchId" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket"></i> Create Contest
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+let prizeRowCount = 0;
+function addPrizeRow() {
+    const i = prizeRowCount++;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+    div.innerHTML = `
+        <input type="number" name="PrizeBreakdowns[${i}].RankFrom" class="form-control" placeholder="From" min="1" style="max-width:90px;" required />
+        <span style="color:var(--text-muted);">–</span>
+        <input type="number" name="PrizeBreakdowns[${i}].RankTo" class="form-control" placeholder="To" min="1" style="max-width:90px;" required />
+        <input type="number" name="PrizeBreakdowns[${i}].Amount" class="form-control" placeholder="Prize ₹" min="0" step="0.01" required />
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    `;
+    document.getElementById('prizeBreakdowns').appendChild(div);
+}
+document.addEventListener('DOMContentLoaded', updatePrize);
+document.getElementById('maxTeams')?.addEventListener('input', updatePrize);
+document.getElementById('entryFee')?.addEventListener('input', updatePrize);
+</script>
+}

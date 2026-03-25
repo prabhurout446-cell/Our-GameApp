@@ -1,0 +1,73 @@
+@model List<Our11.Models.Contest>
+@{
+    ViewData["Title"] = "Admin - Contests";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-layout">
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">ADMIN PANEL</div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link active"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+    <div class="admin-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+            <div class="page-title"><i class="fas fa-trophy text-primary"></i> All Contests</div>
+            <a asp-action="CreateContest" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Create Contest</a>
+        </div>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Contest</th><th>Match</th><th>Entry</th><th>Teams</th><th>Prize Pool</th><th>Commission</th><th>Status</th><th>Created By</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model)
+                        {
+                            var cStatusClass  = (c.Status == "Open" || c.Status == "Full") ? "status-badge status-upcoming" : "status-badge status-completed";
+                            var cCreatedBy    = c.IsAdminContest ? "Admin" : "User";
+                            <tr>
+                                <td>
+                                    <strong>@c.Name</strong>
+                                    @if (c.ContestType == "Private") { <span class="role-badge" style="background:rgba(255,165,0,0.15);color:var(--warning);margin-left:4px;">Private</span> }
+                                </td>
+                                <td style="font-size:0.8rem;">@c.Match?.Team1 vs @c.Match?.Team2</td>
+                                <td>₹@c.EntryFee</td>
+                                <td>@c.FilledTeams/@c.MaxTeams</td>
+                                <td style="color:var(--primary);">₹@c.TotalPrize.ToString("N0")</td>
+                                <td>@c.CommissionPct%</td>
+                                <td>
+                                    <span class="@cStatusClass">@c.Status</span>
+                                </td>
+                                <td class="small">@cCreatedBy</td>
+                                <td>
+                                    <div style="display:flex;gap:4px;">
+                                        <a asp-controller="Contest" asp-action="Detail" asp-route-id="@c.Id" class="btn btn-sm btn-secondary" title="View"><i class="fas fa-eye"></i></a>
+                                        @if (c.Status != "Completed" && c.Status != "Cancelled")
+                                        {
+                                            <form asp-action="FinalizeContest" method="post" onsubmit="return confirm('Finalize contest and distribute prizes?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@c.Id" />
+                                                <button type="submit" class="btn btn-sm btn-primary" title="Finalize"><i class="fas fa-check"></i></button>
+                                            </form>
+                                            <form asp-action="CancelContest" method="post" onsubmit="return confirm('Cancel this contest and refund all entries?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@c.Id" />
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Cancel"><i class="fas fa-times"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

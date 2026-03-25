@@ -1,0 +1,103 @@
+@model List<Our11.Models.Transaction>
+@{
+    ViewData["Title"] = "My Wallet";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var balance = (decimal)(ViewBag.Balance ?? 0m);
+}
+
+<div class="container" style="padding-top:24px;padding-bottom:40px;max-width:800px;" data-balance="@balance">
+    <div class="page-title mb-4">💰 My Wallet</div>
+
+    <div class="wallet-hero">
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px;">Available Balance</div>
+        <div class="wallet-amount">₹@balance.ToString("N2")</div>
+        <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-lg" onclick="document.getElementById('addFundsPanel').style.display='block'">
+                <i class="fas fa-plus"></i> Add Money
+            </button>
+            <button class="btn btn-secondary btn-lg" onclick="document.getElementById('withdrawPanel').style.display='block'">
+                <i class="fas fa-arrow-up"></i> Withdraw
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Funds Panel -->
+    <div id="addFundsPanel" style="display:none;" class="card mb-3">
+        <div class="card-header" style="display:flex;justify-content:space-between;">
+            <span><i class="fas fa-plus-circle text-success"></i> Add Money</span>
+            <button onclick="document.getElementById('addFundsPanel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">✕</button>
+        </div>
+        <div class="card-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                @foreach (var amt in new[] { 50, 100, 200, 500, 1000, 2000 })
+                {
+                    <button type="button" class="filter-chip" onclick="document.getElementById('addAmount').value='@amt'">₹@amt</button>
+                }
+            </div>
+            <form asp-controller="Home" asp-action="AddFunds" method="post" style="display:flex;gap:10px;flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <input type="number" id="addAmount" name="amount" class="form-control" placeholder="Enter amount" min="10" max="100000" style="max-width:200px;" required />
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add Funds</button>
+            </form>
+            <div class="small text-muted mt-2"><i class="fas fa-info-circle"></i> Demo mode: funds are credited instantly</div>
+        </div>
+    </div>
+
+    <!-- Withdraw Panel -->
+    <div id="withdrawPanel" style="display:none;" class="card mb-4">
+        <div class="card-header" style="display:flex;justify-content:space-between;">
+            <span><i class="fas fa-arrow-up text-primary"></i> Withdraw Funds</span>
+            <button onclick="document.getElementById('withdrawPanel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">✕</button>
+        </div>
+        <div class="card-body">
+            <form asp-controller="Home" asp-action="Withdraw" method="post" style="display:flex;gap:10px;flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <input type="number" name="amount" class="form-control" placeholder="Amount to withdraw" min="100" max="@balance" style="max-width:200px;" required />
+                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-paper-plane"></i> Withdraw</button>
+            </form>
+            <div class="small text-muted mt-2">Minimum withdrawal: ₹100</div>
+        </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="card">
+        <div class="card-header"><i class="fas fa-history text-primary"></i> Transaction History</div>
+        @if (Model.Any())
+        {
+            <div>
+                @foreach (var t in Model)
+                {
+                    var isCredit   = t.Amount > 0;
+                    var iconBg     = isCredit ? "rgba(46,213,115,0.15)" : "rgba(255,71,87,0.15)";
+                    var iconColor  = isCredit ? "var(--success)" : "var(--danger)";
+                    var iconName   = t.Type == "Deposit" ? "plus"
+                                  : t.Type == "Withdrawal" ? "arrow-up"
+                                  : t.Type == "WinningsCredit" ? "trophy"
+                                  : "minus";
+                    var amtColor   = isCredit ? "color:var(--success)" : "color:var(--danger)";
+                    var amtPrefix  = isCredit ? "+" : "";
+                    <div class="leaderboard-row">
+                        <div style="width:40px;height:40px;border-radius:50%;background:@iconBg;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-@iconName" style="color:@iconColor;font-size:0.85rem;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:0.88rem;font-weight:500;">@t.Description</div>
+                            <div class="small text-muted">@t.CreatedAt.ToString("MMM d, yyyy h:mm tt") • @t.Type</div>
+                        </div>
+                        <div style="font-weight:700;@amtColor">
+                            @amtPrefix₹@Math.Abs(t.Amount).ToString("N2")
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state" style="padding:40px;">
+                <i class="fas fa-receipt"></i>
+                <h4>No Transactions</h4>
+                <p>Add money to get started!</p>
+            </div>
+        }
+    </div>
+</div>

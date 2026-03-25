@@ -1,0 +1,161 @@
+@model Our11.Models.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">
+            ADMIN PANEL
+        </div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+
+    <div class="admin-content">
+        <!-- Mobile admin nav -->
+        <div class="d-md-none" style="display:flex;gap:8px;overflow-x:auto;margin-bottom:20px;padding-bottom:8px;">
+            <a asp-action="Index" class="filter-chip active">Dashboard</a>
+            <a asp-action="Matches" class="filter-chip">Matches</a>
+            <a asp-action="Contests" class="filter-chip">Contests</a>
+            <a asp-action="Users" class="filter-chip">Users</a>
+            <a asp-action="Settings" class="filter-chip">Settings</a>
+        </div>
+
+        <div class="page-title mb-4"><i class="fas fa-tachometer-alt text-primary"></i> Dashboard</div>
+
+        <!-- Stats -->
+        <div class="stat-grid mb-4">
+            <div class="stat-card">
+                <div class="stat-value">@Model.TotalUsers</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@Model.TotalMatches</div>
+                <div class="stat-label">Total Matches</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@Model.TotalContests</div>
+                <div class="stat-label">Total Contests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color:var(--success);">₹@Model.TotalRevenue.ToString("N0")</div>
+                <div class="stat-label">Platform Revenue</div>
+            </div>
+        </div>
+
+        <!-- Commission Control -->
+        <div class="card mb-4" style="border:1px solid rgba(212,245,42,0.2);">
+            <div class="card-header">
+                <i class="fas fa-percentage text-primary"></i> Platform Commission
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px;">(Admin Only)</span>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-family:var(--font-display);font-size:3rem;font-weight:700;color:var(--primary);">@Model.CommissionPct%</div>
+                        <div class="small text-muted">Current commission on all contests</div>
+                    </div>
+                    <div style="flex:1;max-width:400px;">
+                        <form asp-action="UpdateCommission" method="post" style="display:flex;gap:10px;align-items:flex-end;">
+                            @Html.AntiForgeryToken()
+                            <div style="flex:1;">
+                                <label class="form-label">New Commission %</label>
+                                <input type="number" name="commissionPct" class="form-control" value="@Model.CommissionPct" min="0" max="50" step="0.5" required />
+                                <div class="small text-muted mt-1">Range: 0% – 50%</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update</button>
+                        </form>
+                    </div>
+                </div>
+                <div style="background:var(--dark-3);border-radius:8px;padding:12px;margin-top:16px;font-size:0.8rem;color:var(--text-muted);">
+                    <i class="fas fa-calculator"></i> <strong>Example:</strong> Contest with 4 teams × ₹10 entry = ₹40 gross → 
+                    ₹@(40 * Model.CommissionPct / 100m).ToString("N2") commission → 
+                    ₹@(40 - 40 * Model.CommissionPct / 100m).ToString("N2") distributed as prizes
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Active Matches -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span><i class="fas fa-calendar text-primary"></i> Active Matches</span>
+                        <div style="display:flex;gap:8px;">
+                            <form asp-action="SyncMatches" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-sync"></i> Sync API
+                                </button>
+                            </form>
+                            <a asp-action="CreateMatch" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i> Add
+                            </a>
+                        </div>
+                    </div>
+                    @if (Model.ActiveMatches.Any())
+                    {
+                        <div>
+                            @foreach (var m in Model.ActiveMatches)
+                            {
+                                <div class="leaderboard-row">
+                                    <div style="flex:1;">
+                                        <div style="font-weight:600;font-size:0.88rem;">@m.Team1 vs @m.Team2</div>
+                                        <div class="small text-muted">@m.MatchType • @m.StartTime.ToString("MMM d, h:mm tt")</div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        @{ var mBadge = m.Status == "Live" ? "status-badge status-live" : "status-badge status-upcoming"; }
+                                        <span class="@mBadge">@m.Status</span>
+                                        <a asp-action="ManagePlayers" asp-route-matchId="@m.Id" class="btn btn-sm btn-secondary"><i class="fas fa-users"></i></a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state" style="padding:30px;"><i class="fas fa-calendar-times"></i><p>No active matches</p></div>
+                    }
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header"><i class="fas fa-history text-primary"></i> Recent Transactions</div>
+                    @if (Model.RecentTransactions.Any())
+                    {
+                        <div>
+                            @foreach (var t in Model.RecentTransactions.Take(10))
+                            {
+                                var tColor  = t.Amount > 0 ? "color:var(--success)" : "color:var(--danger)";
+                                var tPrefix = t.Amount > 0 ? "+" : "";
+                                <div class="leaderboard-row" style="padding:10px 16px;">
+                                    <div style="flex:1;">
+                                        <div style="font-size:0.82rem;font-weight:500;">@t.User?.FullName</div>
+                                        <div style="font-size:0.72rem;color:var(--text-muted);">@t.Type • @t.CreatedAt.ToString("MMM d, HH:mm")</div>
+                                    </div>
+                                    <div style="font-weight:700;font-size:0.88rem;@tColor">
+                                        @tPrefix₹@Math.Abs(t.Amount).ToString("N2")
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state" style="padding:30px;"><i class="fas fa-receipt"></i><p>No transactions yet</p></div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

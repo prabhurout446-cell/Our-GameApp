@@ -1,0 +1,133 @@
+@model Our11.Models.CreateContestViewModel
+@{
+    ViewData["Title"] = "Admin - Create Contest";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var matches = ViewBag.Matches as List<Our11.Models.Match> ?? new();
+    var commPct = (decimal)(ViewBag.CommissionPct ?? 25m);
+}
+
+<div class="admin-layout">
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">ADMIN PANEL</div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link active"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+    <div class="admin-content" style="max-width:700px;">
+        <a asp-action="Contests" style="color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-arrow-left"></i> Back to Contests</a>
+        <div class="page-title mt-3 mb-4"><i class="fas fa-plus text-primary"></i> Create Admin Contest</div>
+
+        <form asp-action="CreateContest" method="post">
+            @Html.AntiForgeryToken()
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Match *</label>
+                        <select name="MatchId" id="matchSelect" class="form-control" required>
+                            <option value="">-- Select Match --</option>
+                            @foreach (var m in matches)
+                            {
+                                if (Model.MatchId == m.Id)
+                                {
+                                    <option value="@m.Id" selected>@m.Team1 vs @m.Team2 — @m.MatchType — @m.StartTime.ToString("MMM d, h:mm tt")</option>
+                                }
+                                else
+                                {
+                                    <option value="@m.Id">@m.Team1 vs @m.Team2 — @m.MatchType — @m.StartTime.ToString("MMM d, h:mm tt")</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contest Name *</label>
+                        <input name="Name" class="form-control" placeholder="e.g. Mega Contest, Grand League..." required maxlength="100" />
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Max Teams *</label>
+                                <input type="number" name="MaxTeams" id="maxTeams" class="form-control" min="2" max="100000" value="100" required />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Entry Fee (₹) *</label>
+                                <input type="number" name="EntryFee" id="entryFee" class="form-control" min="0" step="0.01" value="49" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contest Type</label>
+                        <select name="ContestType" class="form-control">
+                            <option value="Public">🌍 Public</option>
+                            <option value="Private">🔒 Private (with invite code)</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="commissionPct" value="@commPct" />
+                </div>
+            </div>
+
+            <!-- Prize pool preview -->
+            <div class="card mb-3" style="border:1px solid rgba(212,245,42,0.2);">
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="grossPrize">₹0</div>
+                            <div class="stat-label">Gross Pool</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="commissionAmt" style="color:var(--danger);">₹0</div>
+                            <div class="stat-label">Platform Fee (@commPct%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="netPrize" style="color:var(--success);">₹0</div>
+                            <div class="stat-label">Net Prize Pool</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prize breakdown -->
+            <div class="card mb-4">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span><i class="fas fa-medal"></i> Prize Breakdown (optional)</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPrizeRow()"><i class="fas fa-plus"></i> Add</button>
+                </div>
+                <div class="card-body" id="prizeBreakdowns">
+                    <div class="small text-muted mb-3">Leave empty to auto-distribute (top 40% win)</div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <a asp-action="Contests" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-rocket"></i> Create Contest</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let prizeRowCount = 0;
+function addPrizeRow() {
+    const i = prizeRowCount++;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+    div.innerHTML = `
+        <input type="number" name="PrizeBreakdowns[${i}].RankFrom" class="form-control" placeholder="From Rank" min="1" style="max-width:110px;" required />
+        <span style="color:var(--text-muted);">–</span>
+        <input type="number" name="PrizeBreakdowns[${i}].RankTo" class="form-control" placeholder="To Rank" min="1" style="max-width:110px;" required />
+        <input type="number" name="PrizeBreakdowns[${i}].Amount" class="form-control" placeholder="Prize ₹" min="0" step="0.01" required />
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    `;
+    document.getElementById('prizeBreakdowns').appendChild(div);
+}
+document.addEventListener('DOMContentLoaded', updatePrize);
+document.getElementById('maxTeams')?.addEventListener('input', updatePrize);
+document.getElementById('entryFee')?.addEventListener('input', updatePrize);
+</script>
+}

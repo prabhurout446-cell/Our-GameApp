@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>@ViewData["Title"] - Our11</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+@{
+    var currentCtrl   = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var navMatches    = currentCtrl == "Match"     ? "nav-link active" : "nav-link";
+    var navMyContests = currentAction == "MyContests" ? "nav-link active" : "nav-link";
+    var bnHome        = (currentCtrl == "Home" && currentAction == "Index") ? "bottom-nav-item active" : "bottom-nav-item";
+    var bnMatches     = currentCtrl == "Match"        ? "bottom-nav-item active" : "bottom-nav-item";
+    var bnMyContests  = currentAction == "MyContests"  ? "bottom-nav-item active" : "bottom-nav-item";
+    var bnWallet      = currentAction == "Wallet"      ? "bottom-nav-item active" : "bottom-nav-item";
+}
+<body>
+    <!-- Top Nav -->
+    <nav class="navbar" id="mainNav">
+        <div class="nav-container">
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                <span class="brand-icon">🏏</span>
+                <span class="brand-text">Our<span class="brand-11">11</span></span>
+            </a>
+
+            <div class="nav-center d-none d-md-flex">
+                <a asp-controller="Match" asp-action="Index" class="@navMatches">
+                    <i class="fas fa-calendar-alt"></i> Matches
+                </a>
+                <a asp-controller="Contest" asp-action="InviteCode" class="nav-link">
+                    <i class="fas fa-ticket-alt"></i> Join Contest
+                </a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Home" asp-action="MyContests" class="@navMyContests">
+                        <i class="fas fa-trophy"></i> My Contests
+                    </a>
+                }
+            </div>
+
+            <div class="nav-right">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Home" asp-action="Wallet" class="wallet-btn">
+                        <i class="fas fa-wallet"></i>
+                        <span id="walletBal">Loading...</span>
+                    </a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index" class="btn btn-sm btn-admin">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                    }
+                    <div class="user-menu" id="userMenuBtn">
+                        <div class="user-avatar">@User.Identity.Name?[0].ToString().ToUpper()</div>
+                        <div class="user-dropdown" id="userDropdown">
+                            <a asp-controller="Account" asp-action="Profile"><i class="fas fa-user"></i> Profile</a>
+                            <a asp-controller="Home" asp-action="Wallet"><i class="fas fa-wallet"></i> Wallet</a>
+                            <a asp-controller="Home" asp-action="MyContests"><i class="fas fa-trophy"></i> My Contests</a>
+                            <hr>
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="dropdown-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm me-2">Login</a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-sm">Register</a>
+                }
+                <button class="hamburger d-md-none" id="menuToggle">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <a asp-controller="Match" asp-action="Index"><i class="fas fa-calendar-alt"></i> Matches</a>
+            <a asp-controller="Contest" asp-action="InviteCode"><i class="fas fa-ticket-alt"></i> Join Contest</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Home" asp-action="MyContests"><i class="fas fa-trophy"></i> My Contests</a>
+                <a asp-controller="Home" asp-action="Wallet"><i class="fas fa-wallet"></i> Wallet</a>
+                <a asp-controller="Account" asp-action="Profile"><i class="fas fa-user"></i> Profile</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Admin" asp-action="Index"><i class="fas fa-cog"></i> Admin Panel</a>
+                }
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="mobile-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus"></i> Register</a>
+            }
+        </div>
+    </nav>
+
+    <!-- Alerts -->
+    <div class="alert-container">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible" role="alert">
+                <i class="fas fa-check-circle"></i> @TempData["Success"]
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible" role="alert">
+                <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            </div>
+        }
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <!-- Bottom Nav (Mobile) -->
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <nav class="bottom-nav d-md-none">
+            <a asp-controller="Home" asp-action="Index" class="@bnHome">
+                <i class="fas fa-home"></i><span>Home</span>
+            </a>
+            <a asp-controller="Match" asp-action="Index" class="@bnMatches">
+                <i class="fas fa-cricket-bat-ball"></i><span>Matches</span>
+            </a>
+            <a asp-controller="Home" asp-action="MyContests" class="@bnMyContests">
+                <i class="fas fa-trophy"></i><span>My Contests</span>
+            </a>
+            <a asp-controller="Home" asp-action="Wallet" class="@bnWallet">
+                <i class="fas fa-wallet"></i><span>Wallet</span>
+            </a>
+            <a asp-controller="Account" asp-action="Profile" class="bottom-nav-item">
+                <i class="fas fa-user"></i><span>Profile</span>
+            </a>
+        </nav>
+    }
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Update wallet balance
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <text>
+            fetch('/Home/Wallet').then(r => r.text()).then(html => {
+                const match = html.match(/data-balance="([\d.]+)"/);
+                if (match) document.getElementById('walletBal') && (document.getElementById('walletBal').textContent = '₹' + parseFloat(match[1]).toLocaleString('en-IN'));
+            }).catch(() => {});
+            </text>
+        }
+        // User menu toggle
+        document.getElementById('userMenuBtn')?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('userDropdown')?.classList.toggle('show');
+        });
+        document.addEventListener('click', () => document.getElementById('userDropdown')?.classList.remove('show'));
+        // Mobile menu
+        document.getElementById('menuToggle')?.addEventListener('click', function() {
+            document.getElementById('mobileMenu')?.classList.toggle('open');
+            this.classList.toggle('active');
+        });
+        // Auto dismiss alerts
+        setTimeout(() => { document.querySelectorAll('.alert').forEach(a => a.remove()); }, 5000);
+    </script>
+</body>
+</html>

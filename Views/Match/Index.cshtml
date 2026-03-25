@@ -1,0 +1,125 @@
+@model List<Our11.Models.Match>
+@{
+    ViewData["Title"] = "All Matches";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var live = Model.Where(m => m.Status == "Live").ToList();
+    var upcoming = Model.Where(m => m.Status == "Upcoming").ToList();
+    var completed = Model.Where(m => m.Status == "Completed").ToList();
+}
+
+<div class="container" style="padding-top:20px;">
+    <div class="page-header">
+        <div class="page-title"><i class="fas fa-calendar-alt text-primary"></i> All Matches</div>
+    </div>
+
+    @{
+        string fAll      = (ViewBag.Status == null && ViewBag.Sport == null) ? "filter-chip active" : "filter-chip";
+        string fLive     = (ViewBag.Status == "Live")      ? "filter-chip active" : "filter-chip";
+        string fUpcoming = (ViewBag.Status == "Upcoming")  ? "filter-chip active" : "filter-chip";
+        string fCompleted= (ViewBag.Status == "Completed") ? "filter-chip active" : "filter-chip";
+        string fCricket  = (ViewBag.Sport  == "Cricket")   ? "filter-chip active" : "filter-chip";
+    }
+    <div class="filter-bar">
+        <a asp-action="Index" class="@fAll">All</a>
+        <a asp-action="Index" asp-route-status="Live" class="@fLive">🔴 Live</a>
+        <a asp-action="Index" asp-route-status="Upcoming" class="@fUpcoming">⚡ Upcoming</a>
+        <a asp-action="Index" asp-route-status="Completed" class="@fCompleted">✓ Completed</a>
+        <a asp-action="Index" asp-route-sport="Cricket" class="@fCricket">🏏 Cricket</a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <!-- Live -->
+        @if (live.Any())
+        {
+            <div class="section-title">🔴 Live Now <span class="badge-live">LIVE</span></div>
+            <div class="match-grid mb-4">
+                @foreach (var m in live)
+                {
+                    <a asp-controller="Match" asp-action="Detail" asp-route-id="@m.Id" class="match-card">
+                        <div class="match-card-header">
+                            <span>@m.MatchType • @m.Sport</span>
+                            <span class="status-badge status-live">● Live</span>
+                        </div>
+                        <div class="match-teams">
+                            <div class="team-block"><div class="team-name">@m.Team1</div></div>
+                            <div class="vs-block"><div class="vs-text">VS</div></div>
+                            <div class="team-block"><div class="team-name">@m.Team2</div></div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(m.Score))
+                        {
+                            <div style="padding:8px 16px;font-size:0.8rem;color:var(--primary);" data-live-match-id="@m.Id">@m.Score</div>
+                        }
+                        <div class="match-card-footer">
+                            <span>@m.Venue</span>
+                            <span class="contest-count">Play Now</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+
+        <!-- Upcoming -->
+        @if (upcoming.Any())
+        {
+            <div class="section-title">⚡ Upcoming</div>
+            <div class="match-grid mb-4">
+                @foreach (var m in upcoming)
+                {
+                    <a asp-controller="Match" asp-action="Detail" asp-route-id="@m.Id" class="match-card">
+                        <div class="match-card-header">
+                            <span>@m.MatchType • @m.Sport</span>
+                            <span class="status-badge status-upcoming">Upcoming</span>
+                        </div>
+                        <div class="match-teams">
+                            <div class="team-block"><div class="team-name">@m.Team1</div></div>
+                            <div class="vs-block">
+                                <div class="vs-text">VS</div>
+                                <div style="font-size:0.68rem;color:var(--text-muted);" data-countdown="@m.StartTime.ToString("O")"></div>
+                            </div>
+                            <div class="team-block"><div class="team-name">@m.Team2</div></div>
+                        </div>
+                        <div class="match-card-footer">
+                            <span><i class="far fa-clock"></i> @m.StartTime.ToString("MMM d, h:mm tt")</span>
+                            <span class="contest-count">Join Contest</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+
+        <!-- Completed -->
+        @if (completed.Any())
+        {
+            <div class="section-title">✓ Completed</div>
+            <div class="match-grid mb-4">
+                @foreach (var m in completed)
+                {
+                    <a asp-controller="Match" asp-action="Detail" asp-route-id="@m.Id" class="match-card" style="opacity:0.7;">
+                        <div class="match-card-header">
+                            <span>@m.MatchType • @m.Sport</span>
+                            <span class="status-badge status-completed">Completed</span>
+                        </div>
+                        <div class="match-teams">
+                            <div class="team-block"><div class="team-name">@m.Team1</div></div>
+                            <div class="vs-block"><div class="vs-text">VS</div></div>
+                            <div class="team-block"><div class="team-name">@m.Team2</div></div>
+                        </div>
+                        <div class="match-card-footer">
+                            <span>@m.Venue</span>
+                            <span style="font-size:0.75rem;color:var(--text-muted);">@m.StartTime.ToString("MMM d")</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <h4>No Matches Found</h4>
+            <p>No matches available for the selected filter.</p>
+        </div>
+    }
+</div>

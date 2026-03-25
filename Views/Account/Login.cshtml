@@ -1,0 +1,48 @@
+@model Our11.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:420px;">
+        <div style="text-align:center;margin-bottom:32px;">
+            <div style="font-size:3rem;">🏏</div>
+            <h1 style="font-family:var(--font-display);font-size:2rem;font-weight:700;">Welcome Back</h1>
+            <p class="text-muted">Login to play fantasy cricket</p>
+        </div>
+        <div class="card">
+            <div class="card-body" style="padding:28px;">
+                <form asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="form-error mb-3"></div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+                        <span asp-validation-for="Email" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input asp-for="Password" class="form-control" type="password" placeholder="••••••••" />
+                        <span asp-validation-for="Password" class="form-error"></span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+                            <input asp-for="RememberMe" type="checkbox" />
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <div style="text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-muted);">
+                    Don't have an account? <a asp-action="Register" style="color:var(--primary);font-weight:600;">Register</a>
+                </div>
+                <div style="margin-top:16px;padding:12px;background:var(--dark-3);border-radius:8px;font-size:0.78rem;color:var(--text-muted);">
+                    <strong>Demo Admin:</strong> admin@our11.com / Admin@123
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

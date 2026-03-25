@@ -1,0 +1,69 @@
+@model List<Our11.Models.Match>
+@{
+    ViewData["Title"] = "Admin - Matches";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-layout">
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">ADMIN PANEL</div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link active"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+    <div class="admin-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+            <div class="page-title"><i class="fas fa-calendar-alt text-primary"></i> Matches</div>
+            <div style="display:flex;gap:8px;">
+                <form asp-action="SyncMatches" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync"></i> Sync from API</button>
+                </form>
+                <a asp-action="CreateMatch" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Create Match</a>
+            </div>
+        </div>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Match</th><th>Type</th><th>Venue</th><th>Start Time</th><th>Status</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model)
+                        {
+                            
+                            var mStatusClass = m.Status == "Live" ? "status-badge status-live"
+                                                 : m.Status == "Upcoming" ? "status-badge status-upcoming"
+                                                 : "status-badge status-completed";
+                            
+                            <tr>
+                                <td><strong>@m.Team1 vs @m.Team2</strong></td>
+                                <td>@m.MatchType</td>
+                                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@m.Venue</td>
+                                <td>@m.StartTime.ToString("MMM d, h:mm tt")</td>
+                                <td><span class="@mStatusClass">@m.Status</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;">
+                                        <a asp-action="ManagePlayers" asp-route-matchId="@m.Id" class="btn btn-sm btn-secondary" title="Manage Players"><i class="fas fa-users"></i></a>
+                                        <a asp-action="CreateContest" asp-route-matchId="@m.Id" class="btn btn-sm btn-outline-primary" title="Add Contest"><i class="fas fa-trophy"></i></a>
+                                        <form asp-action="DeleteMatch" method="post" onsubmit="return confirm('Deactivate this match?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@m.Id" />
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Deactivate"><i class="fas fa-ban"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

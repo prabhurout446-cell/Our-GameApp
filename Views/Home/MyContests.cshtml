@@ -1,0 +1,123 @@
+@model List<Our11.Models.UserContest>
+@{
+    ViewData["Title"] = "My Contests";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var active = Model.Where(uc => uc.Contest.Status != "Completed" && uc.Contest.Status != "Cancelled").ToList();
+    var completedContests = Model.Where(uc => uc.Contest.Status == "Completed").ToList();
+}
+
+<div class="container" style="padding-top:24px;padding-bottom:40px;">
+    <div class="page-title mb-4">🏆 My Contests</div>
+
+
+    <div data-tabs-container>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="active-tab">Active (@active.Count)</button>
+            <button class="tab-btn" data-tab="completed-tab">Completed (@completedContests.Count)</button>
+        </div>
+
+        <div class="tab-content active" data-tab-content="active-tab">
+            @if (active.Any())
+            {
+                <div style="display:grid;gap:12px;margin-top:16px;">
+                    @foreach (var uc in active)
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                                    <div>
+                                        <div style="font-weight:700;font-size:1rem;">@uc.Contest.Name</div>
+                                        <div class="small text-muted">@uc.Contest.Match.Team1 vs @uc.Contest.Match.Team2</div>
+                                        <div class="small text-muted">Team: <strong>@uc.UserTeam.TeamName</strong></div>
+                                        <div class="small text-muted">Joined: @uc.JoinedAt.ToString("MMM d, h:mm tt")</div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <div style="font-size:1.1rem;font-weight:700;color:var(--primary);">₹@uc.Contest.TotalPrize.ToString("N0") Pool</div>
+                                        <div class="small text-muted">Entry: ₹@uc.Contest.EntryFee</div>
+                                        @if (uc.Contest.Match.Status == "Live")
+                                        {
+                                            <span class="status-badge status-live mt-2">● Live</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-upcoming mt-2">Active</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <a asp-controller="Contest" asp-action="Detail" asp-route-id="@uc.ContestId" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> View Contest
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state" style="padding:60px 20px;">
+                    <i class="fas fa-trophy"></i>
+                    <h4>No Active Contests</h4>
+                    <p>Join a contest to see it here!</p>
+                    <a asp-controller="Match" asp-action="Index" class="btn btn-primary mt-3">Browse Matches</a>
+                </div>
+            }
+        </div>
+
+        <div class="tab-content" data-tab-content="completed-tab">
+            @if (completedContests.Any())
+            {
+                <div style="display:grid;gap:12px;margin-top:16px;">
+                    @foreach (var uc in completedContests)
+                    {
+                        var isWinner    = uc.WinningsAmount.HasValue && uc.WinningsAmount > 0;
+                        var cardBorder  = isWinner ? "border:1px solid rgba(46,213,115,0.3)" : "border:1px solid var(--border)";
+                        var rankColor   = (uc.Rank.HasValue && uc.Rank <= 3) ? "color:var(--gold)" : "color:var(--text)";
+                        <div class="card" style="@cardBorder;">
+                            <div class="card-body">
+                                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                                    <div>
+                                        <div style="font-weight:700;font-size:1rem;">@uc.Contest.Name</div>
+                                        <div class="small text-muted">@uc.Contest.Match.Team1 vs @uc.Contest.Match.Team2</div>
+                                        <div class="small text-muted">Team: @uc.UserTeam.TeamName • Points: @uc.UserTeam.TotalPoints</div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        @if (uc.Rank.HasValue)
+                                        {
+                                            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;@rankColor">
+                                                #@uc.Rank
+                                            </div>
+                                        }
+                                        @if (isWinner)
+                                        {
+                                            <div style="font-size:1.1rem;font-weight:700;color:var(--success);">+₹@uc.WinningsAmount!.Value.ToString("N2")</div>
+                                            <div class="small text-success">🎉 Winner!</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="small text-muted">No winnings</div>
+                                        }
+                                    </div>
+                                </div>
+                                <div style="margin-top:10px;">
+                                    <a asp-controller="Contest" asp-action="Detail" asp-route-id="@uc.ContestId" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-list-ol"></i> View Leaderboard
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state" style="padding:60px 20px;">
+                    <i class="fas fa-history"></i>
+                    <h4>No Completed Contests</h4>
+                    <p>Your completed contest history will appear here.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

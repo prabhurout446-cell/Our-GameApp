@@ -1,0 +1,86 @@
+@model Our11.Models.Match
+@{
+    ViewData["Title"] = "Create Match";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-layout">
+    <div class="admin-sidebar d-none d-md-block">
+        <div style="padding:16px 20px;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:8px;">ADMIN PANEL</div>
+        <a asp-controller="Admin" asp-action="Index" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a asp-controller="Admin" asp-action="Matches" class="admin-nav-link active"><i class="fas fa-calendar-alt"></i> Matches</a>
+        <a asp-controller="Admin" asp-action="Contests" class="admin-nav-link"><i class="fas fa-trophy"></i> Contests</a>
+        <a asp-controller="Admin" asp-action="Users" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a asp-controller="Admin" asp-action="Settings" class="admin-nav-link"><i class="fas fa-cog"></i> Settings</a>
+        <hr style="border-color:var(--border);margin:12px 0;">
+        <a asp-controller="Home" asp-action="Index" class="admin-nav-link"><i class="fas fa-home"></i> Back to Site</a>
+    </div>
+    <div class="admin-content" style="max-width:700px;">
+        <a asp-action="Matches" style="color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-arrow-left"></i> Back to Matches</a>
+        <div class="page-title mt-3 mb-4"><i class="fas fa-plus text-primary"></i> Create Match</div>
+        <div class="card">
+            <div class="card-body" style="padding:24px;">
+                <form asp-action="CreateMatch" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Team 1 *</label>
+                                <input asp-for="Team1" class="form-control" placeholder="e.g. India" required />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Team 2 *</label>
+                                <input asp-for="Team2" class="form-control" placeholder="e.g. Australia" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Sport</label>
+                                <select asp-for="Sport" class="form-control">
+                                    <option>Cricket</option>
+                                    <option>Football</option>
+                                    <option>Basketball</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label">Match Type</label>
+                                <select asp-for="MatchType" class="form-control">
+                                    <option>T20</option>
+                                    <option>ODI</option>
+                                    <option>Test</option>
+                                    <option>T10</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Venue</label>
+                        <input asp-for="Venue" class="form-control" placeholder="Stadium name, City" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Time *</label>
+                        <input asp-for="StartTime" class="form-control" type="datetime-local" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select asp-for="Status" class="form-control">
+                            <option value="Upcoming">Upcoming</option>
+                            <option value="Live">Live</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                        <a asp-action="Matches" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create & Add Players</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

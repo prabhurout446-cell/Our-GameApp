@@ -1,0 +1,166 @@
+@model List<Our11.Models.Player>
+@{
+    var match = ViewBag.Match as Our11.Models.Match;
+    ViewData["Title"] = "Create Team";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Sticky Builder Bar -->
+<div class="team-builder-bar">
+    <div class="container">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                <div class="credit-stat">
+                    <div class="credit-stat-value" id="totalCount" style="color:var(--primary);">0/11</div>
+                    <div class="credit-stat-label">Players</div>
+                </div>
+                <div class="credit-stat">
+                    <div class="credit-stat-value" id="creditsLeft" style="color:var(--primary);">100.0</div>
+                    <div class="credit-stat-label">Credits Left</div>
+                </div>
+                <div class="player-count-display">
+                    <span class="count-pill warn" id="wkCount" data-role="WK">0 WK</span>
+                    <span class="count-pill warn" id="batCount" data-role="BAT">0 BAT</span>
+                    <span class="count-pill warn" id="allCount" data-role="ALL">0 ALL</span>
+                    <span class="count-pill warn" id="bowlCount" data-role="BOWL">0 BOWL</span>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary" id="submitTeamBtn" disabled onclick="document.getElementById('teamForm').submit()">
+                    <i class="fas fa-check"></i> Save Team
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" asp-controller="Team" asp-action="Create" id="teamForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="MatchId" value="@match?.Id" />
+    <input type="hidden" name="TeamName" id="teamNameInput" value="My Team" />
+    <input type="hidden" name="PlayerIds" id="playerIdsInput" />
+    <input type="hidden" name="CaptainId" id="captainInput" />
+    <input type="hidden" name="ViceCaptainId" id="vcInput" />
+</form>
+
+<div class="container" style="padding-top:20px;padding-bottom:30px;">
+    <!-- Match header -->
+    <div style="text-align:center;padding:16px 0 20px;">
+        <div style="font-family:var(--font-display);font-size:1.4rem;font-weight:700;">
+            @match?.Team1 <span style="color:var(--text-muted);font-size:1rem;">vs</span> @match?.Team2
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">Pick 11 players · Max 100 credits · Max 7 from one team</div>
+    </div>
+
+    <!-- Team name input -->
+    <div style="max-width:400px;margin:0 auto 20px;">
+        <input type="text" class="form-control" placeholder="Team Name (optional)" maxlength="50"
+               onchange="document.getElementById('teamNameInput').value=this.value" />
+    </div>
+
+    <!-- Role Rules Card -->
+    <div class="card mb-4" style="border:1px solid rgba(212,245,42,0.15);">
+        <div class="card-body" style="padding:14px 18px;">
+            <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:0.8rem;">
+                <span>🧤 <strong>WK:</strong> 1-4</span>
+                <span>🏏 <strong>BAT:</strong> 3-6</span>
+                <span>⚡ <strong>ALL:</strong> 1-4</span>
+                <span>⚾ <strong>BOWL:</strong> 3-6</span>
+                <span>💰 <strong>Max Credits:</strong> 100</span>
+                <span>🚫 <strong>Max per team:</strong> 7</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player selection tabs by role -->
+    <div data-tabs-container>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="all-players">All (@Model.Count)</button>
+            <button class="tab-btn" data-tab="wk-players">WK (@Model.Count(p => p.Role == "WK"))</button>
+            <button class="tab-btn" data-tab="bat-players">BAT (@Model.Count(p => p.Role == "BAT"))</button>
+            <button class="tab-btn" data-tab="all-rounders">ALL (@Model.Count(p => p.Role == "ALL"))</button>
+            <button class="tab-btn" data-tab="bowl-players">BOWL (@Model.Count(p => p.Role == "BOWL"))</button>
+        </div>
+
+        @foreach (var (tabId, roleFilt) in new[] { ("all-players", ""), ("wk-players", "WK"), ("bat-players", "BAT"), ("all-rounders", "ALL"), ("bowl-players", "BOWL") })
+        {
+            var players      = string.IsNullOrEmpty(roleFilt) ? Model : Model.Where(p => p.Role == roleFilt).ToList();
+            var tabActiveClass = tabId == "all-players" ? "tab-content active" : "tab-content";
+            <div class="@tabActiveClass" data-tab-content="@tabId">
+                @if (!players.Any())
+                {
+                    <div class="empty-state" style="padding:40px;">
+                        <p>No @roleFilt players available</p>
+                    </div>
+                }
+                <div class="player-grid">
+                    @foreach (var p in players.OrderByDescending(p => p.Credits))
+                    {
+                        <div class="player-card" data-player-id="@p.Id" data-credits="@p.Credits" data-role="@p.Role" data-team="@p.Team">
+                            <div class="player-avatar">
+                                @(p.Role == "WK" ? "🧤" : p.Role == "BAT" ? "🏏" : p.Role == "BOWL" ? "⚾" : "⚡")
+                            </div>
+                            <div class="player-info" onclick="TeamBuilder.toggle(@p.Id)" style="cursor:pointer;flex:1;">
+                                <div class="player-name">@p.Name</div>
+                                <div class="player-team">@p.Team</div>
+                                <div style="display:flex;gap:6px;margin-top:4px;align-items:center;">
+                                    <span class="role-badge role-@p.Role">@p.Role</span>
+                                    <span class="selection-pct">@p.SelectionPercentage% sel</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="player-credit">@p.Credits</div>
+                                <div style="display:flex;gap:4px;margin-top:6px;">
+                                    <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:0.68rem;background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);" onclick="TeamBuilder.setCaptain(@p.Id)" title="Set Captain">C</button>
+                                    <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:0.68rem;background:rgba(192,192,192,0.15);color:var(--silver);border:1px solid rgba(192,192,192,0.3);" onclick="TeamBuilder.setViceCaptain(@p.Id)" title="Set Vice Captain">VC</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Captain legend -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-muted);padding:16px 0;">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--primary);display:inline-block;"></span> Selected</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--gold);display:inline-block;"></span> Captain (2x points)</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--silver);display:inline-block;"></span> Vice Captain (1.5x points)</span>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    TeamBuilder.init();
+    // Make player cards selectable
+    document.querySelectorAll('.player-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            const id = parseInt(this.dataset.playerId);
+            TeamBuilder.toggle(id);
+        });
+    });
+    // Update role count pills style based on selection
+    function updatePillStyles() {
+        const wk = TeamBuilder.getCountByRole('WK');
+        const bat = TeamBuilder.getCountByRole('BAT');
+        const all = TeamBuilder.getCountByRole('ALL');
+        const bowl = TeamBuilder.getCountByRole('BOWL');
+        setStyle('wkCount', wk, 1, 4, 'WK');
+        setStyle('batCount', bat, 3, 6, 'BAT');
+        setStyle('allCount', all, 1, 4, 'ALL');
+        setStyle('bowlCount', bowl, 3, 6, 'BOWL');
+    }
+    function setStyle(id, val, min, max, label) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = `${val} ${label}`;
+        el.className = 'count-pill ' + (val >= min && val <= max ? 'ok' : val > max ? 'err' : 'warn');
+    }
+    const orig = TeamBuilder.render.bind(TeamBuilder);
+    TeamBuilder.render = function() { orig(); updatePillStyles(); };
+});
+</script>
+}
