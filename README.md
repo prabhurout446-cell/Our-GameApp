@@ -181,3 +181,5 @@ Uses **CricAPI** (free tier available at cricapi.com):
 - "Add Funds" in wallet is simulated for demo purposes
 - To go production: integrate Razorpay/PayU for real payments
 - Player points must be updated manually by admin (or via API extension)
+  <img width="955" height="476" alt="3" src="https://github.com/user-attachments/assets/ae2ad438-ff9b-4a7f-92bf-d935e35f8f86" />
+
